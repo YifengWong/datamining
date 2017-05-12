@@ -241,6 +241,7 @@ void readTrainFileMatrix(ifstream* file, int maxRow, MatrixXd* trainMean, Matrix
 
 	int i = 0;
 	for (i = 0; i < maxRow && !file->eof(); i++) {
+		if (i % 100000 == 0) cout << endl;
 		tempStr.clear();
 		ss_stream.clear();
 
@@ -341,7 +342,7 @@ void iterationSGD(MatrixXd* trains, MatrixXd* trainsY, MatrixXd* theta, int iter
 void runSGD();
 
 int main() {
-	runNormal(10000, 1000, 0);
+	runNormal(TRAIN_NUM, 1000, 0);
 
 	system("pause");
 	return 0;
