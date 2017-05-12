@@ -232,7 +232,7 @@ MatrixXd* readAndGetSd(ifstream* file, int dataNum, MatrixXd* trainMean) {
 	return trainSD;
 }
 
-void readTrainFileMatrix(ifstream* file, int maxRow) {
+void readTrainFileMatrix(ifstream* file, int maxRow, MatrixXd* trainMean, MatrixXd* trainSD) {
 	string tempStr;
 	stringstream ss_stream;
 	trainData = new MatrixXd(maxRow, DATA_DIM);
@@ -254,7 +254,7 @@ void readTrainFileMatrix(ifstream* file, int maxRow) {
 			int pos;
 			double value;
 			ss_stream >> pos >> value;
-			(*trainData)(i, pos) = value;
+			(*trainData)(i, pos) = (value - (*trainMean)(pos, 0)) / (*trainSD)(pos, 0);
 		}
 	}
 	if (i != maxRow) {
@@ -308,9 +308,19 @@ void iterationMatrix(MatrixXd* trains, MatrixXd* trainsY, MatrixXd* theta, int i
 }
 
 void runNormal(int trainNum, int iterCount, int testNum) {
+	cout << "Read the mean and sd file" << endl;
+	MatrixXd* trainMean = new MatrixXd(DATA_DIM, 1);
+	MatrixXd* trainSd = new MatrixXd(DATA_DIM, 1);
+	ifstream meanFile(TRAIN_MEAN_FILE_PATH, ios_base::in);
+	ifstream sdFile(TRAIN_SD_FILE_PATH, ios_base::in);
+	for (int i = 0; i < DATA_DIM; i++) {
+		meanFile >> (*trainMean)(i, 0);
+		sdFile >> (*trainSd)(i, 0);
+	}
+
 	cout << "Read from train file" << endl;
 	ifstream trainFile(TRAIN_FILE_PATH, ios_base::in);
-	readTrainFileMatrix(&trainFile, trainNum);
+	readTrainFileMatrix(&trainFile, trainNum, trainMean, trainSd);
 	trainFile.close();
 
 	cout << "Begin iteration" << endl;
@@ -331,7 +341,7 @@ void iterationSGD(MatrixXd* trains, MatrixXd* trainsY, MatrixXd* theta, int iter
 void runSGD();
 
 int main() {
-	runNormal(TRAIN_NUM, 500, 0);
+	runNormal(10000, 1000, 0);
 
 	system("pause");
 	return 0;
