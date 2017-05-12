@@ -33,8 +33,8 @@ using namespace Eigen;
 
 #define TRAIN_FILE_PATH "E:\\data\\train_data.txt"
 #define THETA_FILE_PATH "E:\\data\\theta_V0.txt"
-#define TEST_FILE_PATH "E:\\data\\test_data.txt"
-#define RESULT_FILE_PATH "E:\\data\\result.txt"
+#define TEST_FILE_PATH "E:\\data\\my_test_data.txt"
+#define RESULT_FILE_PATH "E:\\data\\result.csv"
 #define TRAIN_MEAN_FILE_PATH "E:\\data\\mean.txt"
 #define TRAIN_SD_FILE_PATH "E:\\data\\sd.txt"
 
@@ -129,11 +129,11 @@ double computeJThetaMatrix(MatrixXd* dataLabels, MatrixXd* htheta) {
 	return Jtheta;
 }
 
-void dealTestAndWriteResultMatrix(ifstream* testFile, ofstream* resultFile, MatrixXd* theta, int testNum) {
+void dealTestAndWriteResultMatrix(ifstream* testFile, ofstream* resultFile, MatrixXd* theta, int testNum, MatrixXd* trainMean, MatrixXd* trainSD) {
 	//cout << *theta << endl;
 	string tempStr;
 	stringstream ss_stream;
-
+	(*resultFile) << "id,label" << endl;
 	while (testNum-- && !testFile->eof()) {
 		MatrixXd line(1, DATA_DIM);
 		tempStr.clear();
@@ -151,10 +151,9 @@ void dealTestAndWriteResultMatrix(ifstream* testFile, ofstream* resultFile, Matr
 			int pos;
 			double value;
 			ss_stream >> pos >> value;
-			line(0, pos) = value;
+			line(0, pos) = (value - (*trainMean)(pos, 0)) / (*trainSD)(pos, 0);
 		}
-		if ((line * (*theta))(0, 0) >= 0) (*resultFile) << 1 << endl;
-		else (*resultFile) << 0 << endl;
+		(*resultFile) << (line * (*theta))(0, 0) << endl;
 	}
 }
 
@@ -268,7 +267,7 @@ void iterationMatrix(MatrixXd* trains, MatrixXd* trainsY, MatrixXd* theta, int i
 	double alpha = 0.9;
 	while (iterCount--) {
 		MatrixXd* hthetaX = hfuncMatrix(theta, trains);
-		printf("%.15lf\n", computeJThetaMatrix(trainsY, hthetaX));
+		printf("%d %.15lf\n", iterCount, computeJThetaMatrix(trainsY, hthetaX));
 		MatrixXd temp((*hthetaX) - (*trainsY));
 		temp /= trains->rows();
 		MatrixXd iter((trains->transpose()) * (temp));
@@ -332,7 +331,7 @@ void runNormal(int trainNum, int iterCount, int testNum) {
 	cout << "Compute the test data and write" << endl;
 	ifstream testFile(TEST_FILE_PATH, ios_base::in);
 	ofstream resultFile(RESULT_FILE_PATH, ios_base::out);
-	dealTestAndWriteResultMatrix(&testFile, &resultFile, theta, testNum);
+	dealTestAndWriteResultMatrix(&testFile, &resultFile, theta, testNum, trainMean, trainSd);
 	testFile.close();
 	resultFile.close();
 }
@@ -342,7 +341,7 @@ void iterationSGD(MatrixXd* trains, MatrixXd* trainsY, MatrixXd* theta, int iter
 void runSGD();
 
 int main() {
-	runNormal(TRAIN_NUM, 1000, 0);
+	runNormal(TRAIN_NUM, 400, TEST_NUM);
 
 	system("pause");
 	return 0;
