@@ -72,10 +72,10 @@
     <IncludePath>D:\coding\eigen-eigen-67e894c6cd8f;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\coding\eigen-eigen-67e894c6cd8f;$(IncludePath)</IncludePath>
+    <IncludePath>E:\eigen;D:\coding\eigen-eigen-67e894c6cd8f;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\coding\eigen-eigen-67e894c6cd8f;$(IncludePath)</IncludePath>
+    <IncludePath>E:\eigen;D:\coding\eigen-eigen-67e894c6cd8f;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -118,7 +118,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="lr.cpp" />
+    <ClCompile Include="LR.cpp" />
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="LRFunction.h" />
+    <ClInclude Include="LR.h" />
+    <ClInclude Include="MatrixUtil.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

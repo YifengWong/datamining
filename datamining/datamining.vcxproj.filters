@@ -15,7 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lr.cpp">
+    <ClInclude Include="LR.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MatrixUtil.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LRFunction.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LR.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
