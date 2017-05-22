@@ -18,6 +18,7 @@
 using namespace std;
 using namespace Eigen;
 
+#define EIGEN_DONT_PARALLELIZE 
 
 #define DATA_DIM 202
 //#define DATA_DIM 5
@@ -99,10 +100,11 @@ void readTrainFileMatrix(MatrixXd* trainData, MatrixXd* trainLabels, ifstream* f
 }
 
 int main() {
+
 	int trainNum = TRAIN_NUM / 50;
 	double alpha = 0.9;
 	bool printIterVerifyFlag = false;
-	int iterCount = 1000;
+	int iterCount = 10000;
 	int testNum = 100;
 
 	MatrixXd* trainMean = new MatrixXd(DATA_DIM, 1);

@@ -25,14 +25,17 @@ void LR::setPrintIterVerify(bool flag) {
 	this->printIterVerifyFlag = flag;
 }
 
+// TODO
 void LR::runNormalIteration(int iterCount) {
 	int count = 0;
 	while (iterCount--) {
+
+		// iter and temp
 		MatrixXd* hthetaX = lrHFunc(theta, trains);
 		printf("%d %.15lf\n", ++count, lrComputeJTheta(trainsY, hthetaX));
 		MatrixXd temp((*hthetaX) - (*trainsY));
 		temp /= trains->rows();
-		MatrixXd iter((trains->transpose()) * (temp));
+		MatrixXd iter((trains->transpose()) * (temp));// Add at here
 
 		if (printIterVerifyFlag) printIterVerify(&iter);
 		
