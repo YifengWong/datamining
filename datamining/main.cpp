@@ -99,6 +99,8 @@ void readTrainFileMatrix(MatrixXd* trainData, MatrixXd* trainLabels, ifstream* f
 	}
 }
 
+
+
 int main() {
 
 	int trainNum = TRAIN_NUM / 50;

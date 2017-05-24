@@ -15,18 +15,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ComputeNode.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="NumParser.h">
+    <ClInclude Include="ComputeCenter.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ComputeNode.cpp">
+    <ClCompile Include="ComputeCenter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="NodeRunner.cpp">
+    <ClCompile Include="CenterRunner.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

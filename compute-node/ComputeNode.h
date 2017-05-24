@@ -2,7 +2,12 @@
 #include <Eigen\Dense>
 using Eigen::MatrixXd;
 
-#include "winsock2.h"
+#include "Winsock2.h"
+#pragma comment(lib,"ws2_32.lib")
+
+#define BUFFER_SIZE 1024
+#define _WINSOCK_DEPRECATED_NO_WARNINGS 1
+
 
 class ComputeNode {
 private:
