@@ -29,6 +29,13 @@ void LR::setPrintIterVerify(bool flag) {
 void LR::runNormalIteration(int iterCount) {
 	int count = 0;
 	while (iterCount--) {
+		// send sample
+		// loop :
+			// send theta
+			// Node: htheta ->send
+			// send temp
+			// Node: iter ->send
+			// iteration.
 
 		// iter and temp
 		MatrixXd* hthetaX = lrHFunc(theta, trains);

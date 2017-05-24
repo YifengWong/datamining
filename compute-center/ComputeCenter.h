@@ -15,6 +15,7 @@ private:
 	SOCKET* clients;    //客户端套接字  
 	SOCKADDR_IN addrServ;;  //服务器地址
 	int clientNum;
+	void static myBlockedRecv(SOCKET s, char* buf, int len, int flags);
 
 public:
 	ComputeCenter(int port, int clientNum);
@@ -25,5 +26,7 @@ public:
 	void blockSendMatrix(MatrixXd* mat, SOCKET* client);
 	void blockBroadcastMatrix(MatrixXd* mat);
 	MatrixXd** blockRecvAllMatrix(int singleRow, int singleCol);
+	void blockedSendStepRowsAndCols(int row, int col, SOCKET* client);
+	void blockedSendStepRow(MatrixXd* mat, SOCKET* client);
 };
 

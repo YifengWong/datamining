@@ -6,6 +6,13 @@ using std::cout;
 using std::endl;
 
 
+void ComputeNode::myBlockedRecv(SOCKET s, char * buf, int len, int flags) {
+	int haveRecv = 0;
+	while (haveRecv != len) {
+		haveRecv += recv(s, buf + haveRecv, len-haveRecv, 0);
+	}
+}
+
 ComputeNode::ComputeNode(const char* ip, int port) {
 	servAddr.sin_family = AF_INET;
 	servAddr.sin_addr.s_addr = inet_addr(ip);
@@ -47,7 +54,7 @@ int ComputeNode::start() {
 
 MatrixXd * ComputeNode::blockedRecvMatrixXd() {
 	char *buffer = new char[BUFFER_SIZE];
-	recv(sHost, buffer, INT_LEN * 2, 0);
+	myBlockedRecv(sHost, buffer, INT_LEN * 2, 0);
 	int rows = getInteger(buffer);
 	int cols = getInteger(buffer + 4);
 
@@ -55,7 +62,7 @@ MatrixXd * ComputeNode::blockedRecvMatrixXd() {
 	int allBytesCount = rows*cols*DBL_LEN;
 	int numCount = 0;
 	for (int i = 0; i < (allBytesCount / BUFFER_SIZE); i++) {
-		recv(sHost, buffer, BUFFER_SIZE, 0);
+		myBlockedRecv(sHost, buffer, BUFFER_SIZE, 0);
 		for (int j = 0; j < BUFFER_SIZE; ) {
 			(*mat)(numCount / cols, numCount % cols) = getDouble(buffer + j);
 			j += DBL_LEN;
@@ -63,7 +70,8 @@ MatrixXd * ComputeNode::blockedRecvMatrixXd() {
 		}
 	}
 	int last = allBytesCount % BUFFER_SIZE;
-	recv(sHost, buffer, last, 0);
+	myBlockedRecv(sHost, buffer, last, 0);
+
 	for (int j = 0; j < last; ) {
 		(*mat)(numCount / cols, numCount % cols) = getDouble(buffer + j);
 		j += DBL_LEN;
@@ -106,4 +114,36 @@ void ComputeNode::blockedSendMatrixXd(MatrixXd * mat) {
 	//	WSACleanup();       //释放套接字资源  
 	//	return;
 	//}
+}
+
+void ComputeNode::blockedSendStepRowsAndCols(int row, int col) {
+	char *buffer = new char[BUFFER_SIZE];
+
+	memcpy(buffer, &row, INT_LEN);
+	memcpy(buffer + INT_LEN, &col, INT_LEN);
+	send(sHost, buffer, INT_LEN * 2, 0);
+}
+
+void ComputeNode::blockedSendStepRow(MatrixXd * mat) {
+	char *buffer = new char[BUFFER_SIZE];
+	int numCount = 0;
+	int rows = mat->rows();
+	int cols = mat->cols();
+
+	int allBytesCount = rows*cols*DBL_LEN;
+	for (int i = 0; i < (allBytesCount / BUFFER_SIZE); i++) {
+		for (int j = 0; j < BUFFER_SIZE; ) {
+			memcpy(buffer + j, &(*mat)(numCount / cols, numCount % cols), DBL_LEN);
+			j += DBL_LEN;
+			numCount++;
+		}
+		send(sHost, buffer, BUFFER_SIZE, 0);
+	}
+	int last = allBytesCount % BUFFER_SIZE;
+	for (int j = 0; j < last; ) {
+		memcpy(buffer + j, &(*mat)(numCount / cols, numCount % cols), DBL_LEN);
+		j += DBL_LEN;
+		numCount++;
+	}
+	send(sHost, buffer, last, 0);
 }

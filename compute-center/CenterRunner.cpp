@@ -3,15 +3,26 @@
 
 using namespace std;
 
+
+
 int main() {
-	ComputeCenter* nc = new ComputeCenter(8888, 1);
+	ComputeCenter* nc = new ComputeCenter(8888, 2);
 	nc->start();
-	int row = 1;
-	int col = 202;
+	int row = 5;
+	int col = 5;
 	MatrixXd* mat = new MatrixXd(row, col);
+
 	cout << *mat << endl;
-	nc->blockSendMatrix(mat, nc->getClient(0));
-	MatrixXd** mats = nc->blockRecvAllMatrix(row, col);
+	//nc->blockBroadcastMatrix(mat);
+	nc->blockedSendStepRowsAndCols(row * 2, col, nc->getClient(0));
+	nc->blockedSendStepRow(mat, nc->getClient(0));
+	nc->blockedSendStepRow(mat, nc->getClient(0));
+
+	nc->blockedSendStepRowsAndCols(row * 2, col, nc->getClient(1));
+	nc->blockedSendStepRow(mat, nc->getClient(1));
+	nc->blockedSendStepRow(mat, nc->getClient(1));
+
+	MatrixXd** mats = nc->blockRecvAllMatrix(row*2, col);
 	cout << *(mats[0]) << endl;
 	
 	delete nc;

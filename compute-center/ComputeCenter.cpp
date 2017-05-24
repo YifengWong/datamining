@@ -6,6 +6,13 @@ using std::cout;
 using std::endl;
 
 
+void ComputeCenter::myBlockedRecv(SOCKET s, char * buf, int len, int flags) {
+	int haveRecv = 0;
+	while (haveRecv != len) {
+		haveRecv += recv(s, buf + haveRecv, len - haveRecv, 0);
+	}
+}
+
 ComputeCenter::ComputeCenter(int port, int clientNum) {
 	addrServ.sin_family = AF_INET;
 	addrServ.sin_port = htons(port);
@@ -104,8 +111,6 @@ void ComputeCenter::blockSendMatrix(MatrixXd * mat, SOCKET * client) {
 	send(*client, buffer, last, 0);
 }
 
-
-
 void ComputeCenter::blockBroadcastMatrix(MatrixXd * mat) {
 	char *buffer = new char[BUFFER_SIZE];
 	int rows = mat->rows();
@@ -126,7 +131,7 @@ void ComputeCenter::blockBroadcastMatrix(MatrixXd * mat) {
 			numCount++;
 		}
 		for (int i = 0; i < clientNum; i++) {
-			send(clients[i], buffer, INT_LEN * 2, 0);
+			send(clients[i], buffer, BUFFER_SIZE, 0);
 		}
 	}
 	int last = allBytesCount % BUFFER_SIZE;
@@ -136,7 +141,7 @@ void ComputeCenter::blockBroadcastMatrix(MatrixXd * mat) {
 		numCount++;
 	}
 	for (int i = 0; i < clientNum; i++) {
-		send(clients[i], buffer, INT_LEN * 2, 0);
+		send(clients[i], buffer, last, 0);
 	}
 }
 
@@ -144,32 +149,72 @@ MatrixXd ** ComputeCenter::blockRecvAllMatrix(int singleRow, int singleCol) {
 	MatrixXd** mat = new MatrixXd*[clientNum];
 	int allBytesCount = singleRow*singleCol*DBL_LEN;
 
+	char *buffer = new char[BUFFER_SIZE];
+	int rows;
+	int cols;
 	for (int i = 0; i < clientNum; i++) {
-		char *buffer = new char[BUFFER_SIZE];
-		recv(clients[i], buffer, INT_LEN * 2, 0);
-		int rows = getInteger(buffer);
-		int cols = getInteger(buffer + 4);
+		myBlockedRecv(clients[i], buffer, INT_LEN * 2, 0);
+		rows = getInteger(buffer);
+		cols = getInteger(buffer + INT_LEN);
 		if (rows != singleRow || cols != singleCol) return nullptr;
 
 		mat[i] = new MatrixXd(singleRow, singleCol);
-		int numCount = 0;
-		for (int i = 0; i < (allBytesCount / BUFFER_SIZE); i++) {
-			recv(clients[i], buffer, BUFFER_SIZE, 0);
+	}
+	
+	int* numCount = new int[clientNum] { 0 };
+	for (int k = 0; k < (allBytesCount / BUFFER_SIZE); k++) {
+		for (int i = 0; i < clientNum; i++) {
+			myBlockedRecv(clients[i], buffer, BUFFER_SIZE, 0);
 			for (int j = 0; j < BUFFER_SIZE; ) {
-				(*mat[i])(numCount / cols, numCount % cols) = getDouble(buffer + j);
+				(*mat[i])(numCount[i] / cols, numCount[i] % cols) = getDouble(buffer + j);
 				j += DBL_LEN;
-				numCount++;
+				numCount[i]++;
 			}
 		}
+	}
+
+	for (int i = 0; i < clientNum; i++) {
 		int last = allBytesCount % BUFFER_SIZE;
-		recv(clients[i], buffer, last, 0);
+		myBlockedRecv(clients[i], buffer, last, 0);
 		for (int j = 0; j < last; ) {
-			(*mat[i])(numCount / cols, numCount % cols) = getDouble(buffer + j);
+			(*mat[i])(numCount[i] / cols, numCount[i] % cols) = getDouble(buffer + j);
 			j += DBL_LEN;
-			numCount++;
+			numCount[i]++;
 		}
 	}
 
 	return mat;
 
+}
+
+void ComputeCenter::blockedSendStepRowsAndCols(int row, int col, SOCKET * client) {
+	char *buffer = new char[BUFFER_SIZE];
+
+	memcpy(buffer, &row, INT_LEN);
+	memcpy(buffer + INT_LEN, &col, INT_LEN);
+	send(*client, buffer, INT_LEN * 2, 0);
+}
+
+void ComputeCenter::blockedSendStepRow(MatrixXd * mat, SOCKET * client) {
+	char *buffer = new char[BUFFER_SIZE];
+	int numCount = 0;
+	int rows = mat->rows();
+	int cols = mat->cols();
+
+	int allBytesCount = rows*cols*DBL_LEN;
+	for (int i = 0; i < (allBytesCount / BUFFER_SIZE); i++) {
+		for (int j = 0; j < BUFFER_SIZE; ) {
+			memcpy(buffer + j, &(*mat)(numCount / cols, numCount % cols), DBL_LEN);
+			j += DBL_LEN;
+			numCount++;
+		}
+		send(*client, buffer, BUFFER_SIZE, 0);
+	}
+	int last = allBytesCount % BUFFER_SIZE;
+	for (int j = 0; j < last; ) {
+		memcpy(buffer + j, &(*mat)(numCount / cols, numCount % cols), DBL_LEN);
+		j += DBL_LEN;
+		numCount++;
+	}
+	send(*client, buffer, last, 0);
 }
