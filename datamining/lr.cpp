@@ -11,9 +11,11 @@ LR::LR(MatrixXd * trains, MatrixXd * trainsY, int dataDim) {
 	this->theta->setZero();
 	this->mean = nullptr;
 	this->sd = nullptr;
+	this->computeCenter = nullptr;
 	this->dataDim = dataDim;
 	alpha = 0;
 	runFlag = false;
+	distributionFlag = false;
 }
 
 
@@ -25,8 +27,17 @@ void LR::setPrintIterVerify(bool flag) {
 	this->printIterVerifyFlag = flag;
 }
 
-// TODO
-void LR::runNormalIteration(int iterCount) {
+void LR::setComputeDistribution(int port, int clientNum) {
+	distributionFlag = true;
+	computeCenter = new ComputeCenter(port, clientNum);
+	computeCenter->start();
+}
+
+ComputeCenter * LR::getComputeCenter() {
+	return computeCenter;
+}
+// 
+void LR::runDistribution(int iterCount) {
 	int count = 0;
 	while (iterCount--) {
 		// send sample
@@ -43,6 +54,22 @@ void LR::runNormalIteration(int iterCount) {
 		MatrixXd temp((*hthetaX) - (*trainsY));
 		temp /= trains->rows();
 		MatrixXd iter((trains->transpose()) * (temp));// Add at here
+
+		if (printIterVerifyFlag) printIterVerify(&iter);
+
+		(*theta) -= (alpha * iter);
+		delete hthetaX;
+	}
+}
+
+void LR::runNormalIteration(int iterCount) {
+	int count = 0;
+	while (iterCount--) {
+		MatrixXd* hthetaX = lrHFunc(theta, trains);
+		printf("%d %.15lf\n", ++count, lrComputeJTheta(trainsY, hthetaX));
+		MatrixXd temp((*hthetaX) - (*trainsY));
+		temp /= trains->rows();
+		MatrixXd iter((trains->transpose()) * (temp));
 
 		if (printIterVerifyFlag) printIterVerify(&iter);
 		

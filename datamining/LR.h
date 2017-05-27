@@ -1,6 +1,7 @@
 #pragma once
 #include <fstream>
 
+#include "../compute-center/ComputeCenter.h"
 #include <Eigen\Dense>
 
 using namespace std;
@@ -12,6 +13,9 @@ public:
 	void setAlpha(double alpha);
 	void setPrintIterVerify(bool flag);
 	
+	void setComputeDistribution(int port, int clientNum);
+	ComputeCenter* getComputeCenter();
+	void runDistribution(int iterCount);
 	void runNormalIteration(int iterCount);
 	void setTheta(MatrixXd* theta);
 	MatrixXd* getTheta();
@@ -30,6 +34,8 @@ private:
 	bool runFlag;
 	bool printIterVerifyFlag;
 
+	ComputeCenter* computeCenter;
+	bool distributionFlag;
 	void printIterVerify(MatrixXd* iter);
 };
 

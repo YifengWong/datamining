@@ -99,7 +99,11 @@ void readTrainFileMatrix(MatrixXd* trainData, MatrixXd* trainLabels, ifstream* f
 	}
 }
 
+void startDist() {
+	// read trains
+	// new LR,center,node
 
+}
 
 int main() {
 

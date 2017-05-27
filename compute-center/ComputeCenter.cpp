@@ -2,6 +2,8 @@
 #include "../compute-node/NumParser.h"
 #include <iostream>
 
+#include "../datamining/LRFunction.h"
+
 using std::cout;
 using std::endl;
 
@@ -145,10 +147,9 @@ void ComputeCenter::blockBroadcastMatrix(MatrixXd * mat) {
 	}
 }
 
-MatrixXd ** ComputeCenter::blockRecvAllMatrix(int singleRow, int singleCol) {
+MatrixXd ** ComputeCenter::blockRecvAllMatrix() {
 	MatrixXd** mat = new MatrixXd*[clientNum];
-	int allBytesCount = singleRow*singleCol*DBL_LEN;
-
+	
 	char *buffer = new char[BUFFER_SIZE];
 	int rows;
 	int cols;
@@ -156,11 +157,11 @@ MatrixXd ** ComputeCenter::blockRecvAllMatrix(int singleRow, int singleCol) {
 		myBlockedRecv(clients[i], buffer, INT_LEN * 2, 0);
 		rows = getInteger(buffer);
 		cols = getInteger(buffer + INT_LEN);
-		if (rows != singleRow || cols != singleCol) return nullptr;
 
-		mat[i] = new MatrixXd(singleRow, singleCol);
+		mat[i] = new MatrixXd(rows, cols);
 	}
 	
+	int allBytesCount = rows*cols*DBL_LEN;
 	int* numCount = new int[clientNum] { 0 };
 	for (int k = 0; k < (allBytesCount / BUFFER_SIZE); k++) {
 		for (int i = 0; i < clientNum; i++) {
@@ -195,16 +196,14 @@ void ComputeCenter::blockedSendStepRowsAndCols(int row, int col, SOCKET * client
 	send(*client, buffer, INT_LEN * 2, 0);
 }
 
-void ComputeCenter::blockedSendStepRow(MatrixXd * mat, SOCKET * client) {
+void ComputeCenter::blockedSendStepRow(double* nums, int colCount, SOCKET * client) {
 	char *buffer = new char[BUFFER_SIZE];
 	int numCount = 0;
-	int rows = mat->rows();
-	int cols = mat->cols();
 
-	int allBytesCount = rows*cols*DBL_LEN;
+	int allBytesCount = colCount*DBL_LEN;
 	for (int i = 0; i < (allBytesCount / BUFFER_SIZE); i++) {
 		for (int j = 0; j < BUFFER_SIZE; ) {
-			memcpy(buffer + j, &(*mat)(numCount / cols, numCount % cols), DBL_LEN);
+			memcpy(buffer + j, &(nums[numCount]), DBL_LEN);
 			j += DBL_LEN;
 			numCount++;
 		}
@@ -212,9 +211,73 @@ void ComputeCenter::blockedSendStepRow(MatrixXd * mat, SOCKET * client) {
 	}
 	int last = allBytesCount % BUFFER_SIZE;
 	for (int j = 0; j < last; ) {
-		memcpy(buffer + j, &(*mat)(numCount / cols, numCount % cols), DBL_LEN);
+		memcpy(buffer + j, &(nums[numCount]), DBL_LEN);
 		j += DBL_LEN;
 		numCount++;
 	}
 	send(*client, buffer, last, 0);
+}
+
+void ComputeCenter::setAllSampleRowsAndDim(int rows, int dim) {
+	allSamplesRows = rows;
+	dataDim = dim;
+
+	int avgCount = rows / clientNum;
+	int moreCount = rows % clientNum;
+	clientTrainsCount = new int[clientNum];
+
+	int i = 0;
+	for (; i < moreCount; i++) {
+		blockedSendStepRowsAndCols(avgCount+1, dim, getClient(i));
+		clientTrainsCount[i] = avgCount + 1;
+	}
+	for (; i < clientNum; i++) {
+		blockedSendStepRowsAndCols(avgCount, dim, getClient(i));
+		clientTrainsCount[i] = avgCount;
+	}
+}
+
+void ComputeCenter::readAndSendASampleRow(int no, double * sample, int cols) {
+	blockedSendStepRow(sample, cols, getClient(no % clientNum));
+}
+
+MatrixXd * ComputeCenter::beginLRIterationAndGetTheta(double alpha, int iterCount, MatrixXd* trainsY) {
+	int count = 0;
+	MatrixXd * theta = new MatrixXd(dataDim, 1);
+	theta->setZero();
+	int trainsNum = trainsY->rows();
+	// send trains
+	for (int i = 0; i < clientNum; i++) {
+		MatrixXd * labels = new MatrixXd(trainsY->block(0, 0, clientTrainsCount[i], 1));
+		blockSendMatrix(labels, getClient(i));
+	}
+	while (iterCount--) {
+		// send sample
+		// loop :
+			// send theta
+			// Node: htheta ->send
+			// send temp
+			// Node: iter ->send
+			// iteration.
+
+		// iter and temp
+		blockBroadcastMatrix(theta);
+		MatrixXd** iter = blockRecvAllMatrix();
+		MatrixXd newIter(dataDim, 1);
+		newIter.setZero();
+		for (int i = 0; i < clientNum; i++) {
+			newIter += (*(iter[i]));
+		}
+		(*theta) -= (alpha * newIter / (double)trainsNum);
+
+		//MatrixXd* hthetaX = lrHFunc(theta, trains);
+		//printf("%d %.15lf\n", ++count, lrComputeJTheta(trainsY, hthetaX));
+		//MatrixXd temp((*hthetaX) - (*trainsY));
+		//temp /= trains->rows();// iter×ö
+		//MatrixXd iter((trains->transpose()) * (temp));// Add at here
+
+		//(*theta) -= (alpha * iter);
+		//delete hthetaX;
+	}
+	return theta;
 }
