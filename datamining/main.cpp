@@ -50,6 +50,7 @@ void dealTestAndWriteResultMatrix(ifstream* testFile, ofstream* resultFile, Matr
 	(*resultFile) << "id,label" << endl;
 	while (testNum-- && !testFile->eof()) {
 		MatrixXd line(1, DATA_DIM);
+		line.setZero();
 		tempStr.clear();
 		ss_stream.clear();
 		getline(*testFile, tempStr, '\n');
@@ -107,11 +108,12 @@ void startDist() {
 
 int main() {
 
-	int trainNum = TRAIN_NUM / 50;
-	double alpha = 0.9;
+	int trainNum = 500000;
+	double alpha = 1.0;
 	bool printIterVerifyFlag = false;
-	int iterCount = 10000;
-	int testNum = 100;
+	int iterCount = 10;
+	int testNum = TEST_NUM;
+	int loopCount = 1;
 
 	MatrixXd* trainMean = new MatrixXd(DATA_DIM, 1);
 	trainMean->setZero();
@@ -138,25 +140,40 @@ int main() {
 	//MatrixXd* theta = readFromMatrixFile(THETA_FILE_PATH, DATA_DIM, 1);
 
 	LR* lr = new LR(trainData, trainLabels, DATA_DIM);
-	lr->setAlpha(alpha);
-	//lr->setTheta(theta);
-	lr->setPrintIterVerify(printIterVerifyFlag);
 
-	clock_t start, stop;
-	start = clock();
-	lr->runNormalIteration(iterCount);
-	stop = clock();
-	printf("Use time %ld ms.\n", (stop - start));
+	// more
+	string path = "G:\\Year3\\Year3-2\\DM\\homework02\\";
+	string thetaFilePath = "_theta.txt";
+	string resultFilePath = "_result.txt";
+	string num_str;
+	stringstream ss;
+	int count = 0;
+	while (count < loopCount) {
+		num_str.clear();
+		ss.clear();
+		ss << count;
+		ss >> num_str;
+		if (++count % 2 == 0) alpha *= 0.75;
+		lr->setAlpha(alpha);
+		//lr->setTheta(theta);
+		lr->setPrintIterVerify(printIterVerifyFlag);
+		clock_t start, stop;
+		start = clock();
+		lr->runNormalIteration(iterCount);
+		stop = clock();
+		printf("Use time %ld ms.\n", (stop - start));
+
+		//cout << "Write theta to file." << endl;
+		//writeMatrixToFile((path+num_str+thetaFilePath).c_str(), lr->getTheta());
+
+		//cout << "Compute the test data and write" << endl;
+		//ifstream testFile(TEST_FILE_PATH, ios_base::in);
+		//ofstream resultFile((path + num_str + resultFilePath).c_str(), ios_base::out);
+		//dealTestAndWriteResultMatrix(&testFile, &resultFile, lr->getTheta(), testNum, trainMean, trainSd);
+		//testFile.close();
+		//resultFile.close();
+	}
 	
-	cout << "Write theta to file." << endl;
-	writeMatrixToFile(THETA_FILE_PATH, lr->getTheta());
-
-	cout << "Compute the test data and write" << endl;
-	ifstream testFile(TEST_FILE_PATH, ios_base::in);
-	ofstream resultFile(RESULT_FILE_PATH, ios_base::out);
-	dealTestAndWriteResultMatrix(&testFile, &resultFile, lr->getTheta(), testNum, trainMean, trainSd);
-	testFile.close();
-	resultFile.close();
 
 	system("pause");
 	return 0;

@@ -13,7 +13,6 @@ public:
 	void setAlpha(double alpha);
 	void setPrintIterVerify(bool flag);
 	
-	void setComputeDistribution(int port, int clientNum);
 	ComputeCenter* getComputeCenter();
 	void runDistribution(int iterCount);
 	void runNormalIteration(int iterCount);

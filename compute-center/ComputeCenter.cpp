@@ -1,6 +1,7 @@
 #include "ComputeCenter.h"
 #include "../compute-node/NumParser.h"
 #include <iostream>
+#include <ctime>
 
 #include "../datamining/LRFunction.h"
 
@@ -148,6 +149,8 @@ void ComputeCenter::blockBroadcastMatrix(MatrixXd * mat) {
 }
 
 MatrixXd ** ComputeCenter::blockRecvAllMatrix() {
+	clock_t start, stop;
+
 	MatrixXd** mat = new MatrixXd*[clientNum];
 	
 	char *buffer = new char[BUFFER_SIZE];
@@ -166,6 +169,10 @@ MatrixXd ** ComputeCenter::blockRecvAllMatrix() {
 	for (int k = 0; k < (allBytesCount / BUFFER_SIZE); k++) {
 		for (int i = 0; i < clientNum; i++) {
 			myBlockedRecv(clients[i], buffer, BUFFER_SIZE, 0);
+			if (k == 0 && i == 0) {
+				start = clock();
+			}
+			
 			for (int j = 0; j < BUFFER_SIZE; ) {
 				(*mat[i])(numCount[i] / cols, numCount[i] % cols) = getDouble(buffer + j);
 				j += DBL_LEN;
@@ -183,6 +190,8 @@ MatrixXd ** ComputeCenter::blockRecvAllMatrix() {
 			numCount[i]++;
 		}
 	}
+	stop = clock();
+	printf("Use time %ld ms.\n", (stop - start));
 
 	return mat;
 
@@ -240,27 +249,27 @@ void ComputeCenter::setAllSampleRowsAndDim(int rows, int dim) {
 void ComputeCenter::readAndSendASampleRow(int no, double * sample, int cols) {
 	blockedSendStepRow(sample, cols, getClient(no % clientNum));
 }
+// send sample
+// loop :
+// send theta
+// Node: htheta ->send
+// send temp
+// Node: iter ->send
+// iteration.
 
+// iter and temp
 MatrixXd * ComputeCenter::beginLRIterationAndGetTheta(double alpha, int iterCount, MatrixXd* trainsY) {
 	int count = 0;
 	MatrixXd * theta = new MatrixXd(dataDim, 1);
 	theta->setZero();
 	int trainsNum = trainsY->rows();
-	// send trains
+
 	for (int i = 0; i < clientNum; i++) {
 		MatrixXd * labels = new MatrixXd(trainsY->block(0, 0, clientTrainsCount[i], 1));
 		blockSendMatrix(labels, getClient(i));
 	}
-	while (iterCount--) {
-		// send sample
-		// loop :
-			// send theta
-			// Node: htheta ->send
-			// send temp
-			// Node: iter ->send
-			// iteration.
 
-		// iter and temp
+	while (iterCount--) {
 		blockBroadcastMatrix(theta);
 		MatrixXd** iter = blockRecvAllMatrix();
 		MatrixXd newIter(dataDim, 1);
@@ -269,15 +278,6 @@ MatrixXd * ComputeCenter::beginLRIterationAndGetTheta(double alpha, int iterCoun
 			newIter += (*(iter[i]));
 		}
 		(*theta) -= (alpha * newIter / (double)trainsNum);
-
-		//MatrixXd* hthetaX = lrHFunc(theta, trains);
-		//printf("%d %.15lf\n", ++count, lrComputeJTheta(trainsY, hthetaX));
-		//MatrixXd temp((*hthetaX) - (*trainsY));
-		//temp /= trains->rows();// iter×ö
-		//MatrixXd iter((trains->transpose()) * (temp));// Add at here
-
-		//(*theta) -= (alpha * iter);
-		//delete hthetaX;
 	}
 	return theta;
 }

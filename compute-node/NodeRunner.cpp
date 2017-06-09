@@ -15,7 +15,6 @@ int main() {
 	int count = 0;
 	while (TRUE) {
 		MatrixXd* theta = cn->blockedRecvMatrixXd();
-		// TODO
 		MatrixXd* hthetaX = lrHFunc(theta, trains);
 		printf("%d %.15lf\n", ++count, lrComputeJTheta(trainsY, hthetaX));
 

@@ -64,16 +64,48 @@ void readTrainFileMatrix(ComputeCenter* cc, MatrixXd* trainLabels, ifstream* fil
 	}
 }
 
+void dealTestAndWriteResultMatrix(ifstream* testFile, ofstream* resultFile, MatrixXd* theta, int testNum, MatrixXd* trainMean, MatrixXd* trainSD) {
+	string tempStr;
+	stringstream ss_stream;
+	(*resultFile) << "id,label" << endl;
+	while (testNum-- && !testFile->eof()) {
+		MatrixXd line(1, DATA_DIM);
+		line.setZero();
+		tempStr.clear();
+		ss_stream.clear();
+		getline(*testFile, tempStr, '\n');
 
+		for (unsigned int i = 0; i < tempStr.length(); i++) if (tempStr[i] == ':') tempStr[i] = ' ';
+		ss_stream << tempStr;
+		string id;
+		ss_stream >> id;
+		(*resultFile) << id << ",";
+		line(0, 0) = 1;
+
+		while (!ss_stream.eof()) {
+			int pos;
+			double value;
+			ss_stream >> pos >> value;
+			line(0, pos) = (value - (*trainMean)(pos, 0)) / (*trainSD)(pos, 0);
+		}
+		(*resultFile) << (line * (*theta))(0, 0) << endl;
+	}
+}
+
+void writeMatrixToFile(const char* filePath, MatrixXd* data) {
+	ofstream matrixFile(filePath, ios_base::out);
+	matrixFile << (*data) << endl;
+	matrixFile.close();
+}
 
 int main() {
-	int trainNum = TRAIN_NUM / 500;
-	double alpha = 0.4;
+	int trainNum = 100000;
+	double alpha = 1.0;
 	bool printIterVerifyFlag = false;
-	int iterCount = 10000;
-	int testNum = 100;
+	int iterCount = 10;
+	int testNum = TEST_NUM;
 	int ccPort = 8888;
-	int ccClinetNum = 2;
+	int ccClinetNum = 1;
 
 	MatrixXd* trainMean = new MatrixXd(DATA_DIM, 1);
 	trainMean->setZero();
@@ -88,6 +120,7 @@ int main() {
 		sdFile >> (*trainSd)(i, 0);
 	}
 
+	cout << "Connect." << endl;
 	ComputeCenter* cc = new ComputeCenter(ccPort, ccClinetNum);
 	cc->start();
 
@@ -102,30 +135,22 @@ int main() {
 	//cout << "Read from theta file" << endl;
 	//MatrixXd* theta = readFromMatrixFile(THETA_FILE_PATH, DATA_DIM, 1);
 
-	cc->beginLRIterationAndGetTheta(alpha, iterCount, trainLabels);
-
-
-
-
-	//ComputeCenter* nc = new ComputeCenter(8888, 2);
-	//nc->start();
-	//int row = 5;
-	//int col = 5;
-	//MatrixXd* mat = new MatrixXd(row, col);
-
-	//cout << *mat << endl;
-	////nc->blockBroadcastMatrix(mat);
-	//nc->blockedSendStepRowsAndCols(row * 2, col, nc->getClient(0));
-	//nc->blockedSendStepRow(mat, nc->getClient(0));
-	//nc->blockedSendStepRow(mat, nc->getClient(0));
-
-	//nc->blockedSendStepRowsAndCols(row * 2, col, nc->getClient(1));
-	//nc->blockedSendStepRow(mat, nc->getClient(1));
-	//nc->blockedSendStepRow(mat, nc->getClient(1));
-
-	//MatrixXd** mats = nc->blockRecvAllMatrix(row*2, col);
-	//cout << *(mats[0]) << endl;
 	
-	//delete nc;
+	clock_t start, stop;
+	start = clock();
+	MatrixXd* theta = cc->beginLRIterationAndGetTheta(alpha, iterCount, trainLabels);
+	stop = clock();
+	printf("Use time %ld ms.\n", (stop - start));
+
+	//cout << "Write theta to file." << endl;
+	//writeMatrixToFile(THETA_FILE_PATH, theta);
+
+	//cout << "Compute the test data and write" << endl;
+	//ifstream testFile(TEST_FILE_PATH, ios_base::in);
+	//ofstream resultFile(RESULT_FILE_PATH, ios_base::out);
+	//dealTestAndWriteResultMatrix(&testFile, &resultFile, theta, testNum, trainMean, trainSd);
+	//testFile.close();
+	//resultFile.close();
+
 	system("pause");
 }

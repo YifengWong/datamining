@@ -27,12 +27,6 @@ void LR::setPrintIterVerify(bool flag) {
 	this->printIterVerifyFlag = flag;
 }
 
-void LR::setComputeDistribution(int port, int clientNum) {
-	distributionFlag = true;
-	computeCenter = new ComputeCenter(port, clientNum);
-	computeCenter->start();
-}
-
 ComputeCenter * LR::getComputeCenter() {
 	return computeCenter;
 }
