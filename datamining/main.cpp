@@ -21,9 +21,7 @@ using namespace Eigen;
 #define EIGEN_DONT_PARALLELIZE 
 
 #define DATA_DIM 202
-//#define DATA_DIM 5
 #define LABEL_POS 202
-//#define LABEL_POS 5
 #define TRAIN_NUM 1866819
 #define TEST_NUM  282796
 #define RANGE_ONCE 10000
@@ -107,13 +105,18 @@ void startDist() {
 }
 
 int main() {
-
-	int trainNum = 500000;
-	double alpha = 1.0;
+	// 训练样本数
+	int trainNum = TRAIN_NUM;
+	// LR步长
+	double alpha = 0.8;  
+	// 是否打印出校验情况
 	bool printIterVerifyFlag = false;
-	int iterCount = 10;
+	// 迭代次数
+	int iterCount = 800;
+	// 测试数据数
 	int testNum = TEST_NUM;
-	int loopCount = 1;
+	// 循环次数，将进行n*迭代数次，用于循环降低步长。
+	int loopCount = 6;
 
 	MatrixXd* trainMean = new MatrixXd(DATA_DIM, 1);
 	trainMean->setZero();
@@ -146,8 +149,10 @@ int main() {
 	string thetaFilePath = "_theta.txt";
 	string resultFilePath = "_result.txt";
 	string num_str;
+	MatrixXd* oldTheta = readFromMatrixFile("G:\\Year3\\Year3-2\\DM\\homework02\\19_theta.txt", DATA_DIM, 1);
 	stringstream ss;
 	int count = 0;
+	lr->setTheta(oldTheta);
 	while (count < loopCount) {
 		num_str.clear();
 		ss.clear();
@@ -155,7 +160,6 @@ int main() {
 		ss >> num_str;
 		if (++count % 2 == 0) alpha *= 0.75;
 		lr->setAlpha(alpha);
-		//lr->setTheta(theta);
 		lr->setPrintIterVerify(printIterVerifyFlag);
 		clock_t start, stop;
 		start = clock();
@@ -163,15 +167,15 @@ int main() {
 		stop = clock();
 		printf("Use time %ld ms.\n", (stop - start));
 
-		//cout << "Write theta to file." << endl;
-		//writeMatrixToFile((path+num_str+thetaFilePath).c_str(), lr->getTheta());
+		cout << "Write theta to file." << endl;
+		writeMatrixToFile((path+num_str+thetaFilePath).c_str(), lr->getTheta());
 
-		//cout << "Compute the test data and write" << endl;
-		//ifstream testFile(TEST_FILE_PATH, ios_base::in);
-		//ofstream resultFile((path + num_str + resultFilePath).c_str(), ios_base::out);
-		//dealTestAndWriteResultMatrix(&testFile, &resultFile, lr->getTheta(), testNum, trainMean, trainSd);
-		//testFile.close();
-		//resultFile.close();
+		cout << "Compute the test data and write" << endl;
+		ifstream testFile(TEST_FILE_PATH, ios_base::in);
+		ofstream resultFile((path + num_str + resultFilePath).c_str(), ios_base::out);
+		dealTestAndWriteResultMatrix(&testFile, &resultFile, lr->getTheta(), testNum, trainMean, trainSd);
+		testFile.close();
+		resultFile.close();
 	}
 	
 

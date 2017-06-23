@@ -15,9 +15,7 @@ using namespace std;
 using namespace Eigen;
 
 #define DATA_DIM 202
-//#define DATA_DIM 5
 #define LABEL_POS 202
-//#define LABEL_POS 5
 #define TRAIN_NUM 1866819
 #define TEST_NUM  282796
 #define RANGE_ONCE 10000
@@ -99,12 +97,19 @@ void writeMatrixToFile(const char* filePath, MatrixXd* data) {
 }
 
 int main() {
+	// 训练样本数
 	int trainNum = 100000;
+	// LR步长
 	double alpha = 1.0;
+	// 是否打印出校验情况
 	bool printIterVerifyFlag = false;
+	// 迭代次数
 	int iterCount = 10;
+	// 测试数据数
 	int testNum = TEST_NUM;
+	// 监听端口
 	int ccPort = 8888;
+	// 计算节点数
 	int ccClinetNum = 1;
 
 	MatrixXd* trainMean = new MatrixXd(DATA_DIM, 1);
